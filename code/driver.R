@@ -94,7 +94,7 @@ dat = list("delta_t" = delta_t * ar, "ET" = ETp[inds] * ar, "pre_1" = pre_1[inds
 parms = c("phi_1", "phi_2", "adv_1_2", "adv_2_3", "adv_3_4", "et", 
           "e_frac", "t_frac_1", "k_s", "b")
 
-rmod = jags.parallel(model.file = "model.R", 
+rmod = jags.parallel(model.file = "code/model.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
                      n.chains = 3, n.iter = 5000, n.burnin = 50, n.thin = 1)

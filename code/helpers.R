@@ -23,10 +23,12 @@ tagg = function(data, dcol, vcol, sd = min(data[,dcol], na.rm = TRUE),
   
   aggd = data.frame("sd" = dts, 
                     "ed" = dts + by - 1,
-                    "val" = numeric(length(dts)), "nobs" = numeric(length(dts)))
+                    "val" = numeric(length(dts)), 
+                    "nobs" = numeric(length(dts)))
   
-  for(i in 1:length(dts)){
-    data.sub = data[data[,dcol] >= sd & data[,dcol] <= ed,]
+  for(i in seq_along(dts)){
+    data.sub = data[data[,dcol] >= aggd[i,]$sd & 
+                      data[,dcol] < aggd[i,]$ed,]
     aggd$val[i] = do.call(func, list(data.sub[,vcol], na.rm = TRUE))
     aggd$nobs[i] = length(na.omit(data.sub[,vcol]))
   }

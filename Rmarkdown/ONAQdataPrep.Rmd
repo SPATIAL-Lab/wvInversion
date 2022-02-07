@@ -1,0 +1,97 @@
+---
+title: "ONAQ dataPrep"
+author: "Gabriel Bowen"
+date: "2/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+Set up packages.
+
+```{r lib}
+library(neonUtilities)
+```
+
+## Soil water content
+
+Get ONAQ SWC data from August/September 2020.
+
+```{r getSWC}
+SW = loadByProduct("DP1.00094.001", "ONAQ", "2020-08", "2020-09", 
+                   check.size = FALSE)
+```
+
+Now have a look, first at the SWC data themselves.
+
+```{r reviewSWC}
+d1m = SW$SWS_1_minute
+hp = unique(d1m$horizontalPosition)
+for(i in hp){
+  d = d1m[d1m$horizontalPosition == i & d1m$VSWCFinalQF == 0,]
+  vp = unique(d$verticalPosition)
+  if(length(vp) > 0){
+    dd = d[d$verticalPosition == vp[1],]
+    plot(dd$startDateTime, dd$VSWCMean, type = "l", main = i,
+         ylim = c(0, max(d$VSWCMean, na.rm = TRUE)))
+    if(length(vp) > 1){
+      for(j in 2:(length(vp))){
+        dd = d[d$verticalPosition == vp[j],]
+        if(nrow(dd) > 0){
+          lines(dd$startDateTime, dd$VSWCMean, col = j)
+        }
+      }
+    }
+  }
+}
+```
+
+What a mess. Sites 002 and 005 have the most coherent data. General pattern across depths at site 005 seems to be more consistent with other sites than the very dry deeper positions at 002. Let's work with 005 then. First we have some clean-up of the VP = 503 data to do to remove the ~zero values early in the timeseries.
+
+```{r clean005}
+d5 = d[d$horizontalPosition == "005",]
+plot(d5[d5$verticalPosition == "503",]$startDateTime, 
+     d5[d5$verticalPosition == "503",]$VSWCMean)
+d5 = d5[d5$VSWCMean > 0.02,]
+lines(d5[d5$verticalPosition == "503",]$startDateTime, 
+     d5[d5$verticalPosition == "503",]$VSWCMean, col = "red")
+```
+
+Still some high values there that are problematic. We'll need a more robust algorithm for cleaning these but for now we can just cull them based on value.
+
+```{r clean005B}
+plot(d5[d5$verticalPosition == "503",]$startDateTime, 
+     d5[d5$verticalPosition == "503",]$VSWCMean)
+d5 = d5[d5$VSWCMean < 0.38,]
+lines(d5[d5$verticalPosition == "503",]$startDateTime, 
+     d5[d5$verticalPosition == "503",]$VSWCMean, col = "red")
+```
+
+Good, that did it. Now let's try to make a set of half-day time series using tagg().
+
+```{r aggregate}
+source("../code/helpers.R")
+d5.501 = d5[d5$verticalPosition == "501",]
+d5.502 = d5[d5$verticalPosition == "502",]
+d5.503 = d5[d5$verticalPosition == "503",]
+d5.501.hd = tagg(d5.501, "startDateTime", "VSWCMean")
+d5.502.hd = tagg(d5.502, "startDateTime", "VSWCMean")
+d5.503.hd = tagg(d5.503, "startDateTime", "VSWCMean")
+```
+
+View results.
+
+```{r plot agg}
+plot(d5.501$startDateTime, d5.501$VSWCMean, ylim = c(0, max(d5$VSWCMean)))
+points(d5.502$startDateTime, d5.502$VSWCMean, col = 2)
+points(d5.503$startDateTime, d5.503$VSWCMean, col = 3)
+lines(d5.501.hd$sd + 12*3600, d5.501.hd$val, col = "white")
+lines(d5.502.hd$sd + 12*3600, d5.502.hd$val)
+lines(d5.503.hd$sd + 12*3600, d5.503.hd$val)
+```
+
+Looks good! Now on to precipitation...
