@@ -94,4 +94,9 @@ lines(d5.502.hd$sd + 12*3600, d5.502.hd$val)
 lines(d5.503.hd$sd + 12*3600, d5.503.hd$val)
 ```
 
-Looks good! Now on to precipitation...
+Looks good! Now save the output.
+
+```{r saveSWC}
+save(d5.501.hd, d5.502.hd, d5.503.hd, file = "../data/2008-09_ONAQswc_gjb.RData")
+```
+
