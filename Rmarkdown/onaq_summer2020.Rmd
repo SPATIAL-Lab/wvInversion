@@ -1,0 +1,296 @@
+---
+title: 'Onaq Summer 2020: Precipitation, VSWC, Latent Heat'
+author: "Paige Austin"
+date: "3/8/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+Goals for 5/2020 through 7/2020:
+
+1. Load: precip, LE and VSWC
+2. Align: start date/time
+3. Aggregate: 12-hour time blocks
+
+```{r setup, echo = FALSE, results='hide', message=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+#setwd("~/Documents/Projects/inversion/data")
+library(neonUtilities)
+library(ggplot2)
+library(dplyr)
+library(imputeTS) #gg_na_dist, statsNA
+library(timetk) #filter_by_time
+library(knitr)
+library(ggpubr) #ggarrange
+#BiocManager::install('rhdf5') #ec data
+
+options(stringsAsFactors=F)
+```
+
+
+Load data:
+
+Precipitation: DP1.00006.001 (units: mm)
+
+Eddy Covariance Bundle: DP4.00200.001 (units: Wm-2)
+
+Volumetric Soil Water Content: DP1.00094.001 (unitless)
+
+```{r pcp_loading,results = "hide" }
+#loading 5 minute data from April - August 2020, need May - July 2020
+pcp <- loadByProduct(dpID="DP1.00006.001",
+                           site= "ONAQ",
+                           timeIndex = "5",
+                           startdate="2020-04",
+                           enddate="2020-08",
+                           check.size = F)
+```
+
+Precip. data prep
+```{r pcp_prep}
+#5 min data df for 4/1/20 to 8/31/20
+pcp_5min <- pcp$PRIPRE_5min
+
+#filtering by time for May to July 2020
+pcp_0507 <-pcp_5min %>%
+    filter_by_time(.date_var = endDateTime,
+                   .start_date = "2020-05-01 00:00:00",
+                   .end_date = "2020-07-31 23:55:00") 
+
+#only quality filtered data
+pcp_0507_qc <- pcp_0507 %>%
+      filter(priPrecipFinalQF == "0")
+
+```
+
+EC bundle
+```{r ec_loading, eval = FALSE}
+# #loading 30 minute ONAQ eddy covariance data from May to July 2020
+#   zipsByProduct(dpID = "DP4.00200.001",
+#   site = "ONAQ",
+#   startdate = "2020-05",
+#   enddate = "2020-07",
+#   package = "basic",
+#   check.size = F,
+#   savepath = "./onaq_0507_2020") #change file path for storing data
+
+```
+Reading downloaded data: processed fluxes, level 4 data product
+```{r ec_read, results = "hide"}
+#pullling out 30 min calculated fluxes
+#use filepath specified above
+flux <- stackEddy(filepath = "./onaq_0507_2020/filesToStack00200",
+                 level="dp04") 
+
+obj_desc <- flux$objDesc
+
+variables <- flux$variables
+
+```
+
+EC data prep
+```{r ec_prep}
+#pull out dataframe of all fluxes
+onaq <- flux$ONAQ
+
+#making dataframe by unflagged LE data
+onaq.qc <- onaq %>%
+        filter(qfqm.fluxH2o.nsae.qfFinl == "0")
+```
+
+VSWC loading
+```{r vswc_loading,results = "hide", message= FALSE}
+#loading 30 minute ONAQ somo data from April - August 2020, need May - July
+swc_0408 <- loadByProduct(dpID="DP1.00094.001",
+                           site= "ONAQ",
+                           timeIndex = "30",
+                           startdate="2020-04",
+                           enddate="2020-08",
+                           check.size = F)
+
+#30 min data df for 4/1/20 to 8/31/20
+swc_0408 <- swc_0408$SWS_30_minute
+
+#filtering for May - July 2020 and by unflagged data
+swc_0507_qc <- swc_0408 %>%
+    filter_by_time(.date_var = endDateTime,
+                   .start_date = "2020-04-30 23:30:00",
+                   .end_date = "2020-08-01 00:00:00") %>%
+    filter(VSWCFinalQF == "0")
+
+#filtering by h-pos 5, v-pos 501; h-pos 2, v-pos 502, 503
+swc_0507_go <-  swc_0507_qc %>% 
+        filter(horizontalPosition == "005" &
+               verticalPosition == "501" |
+        horizontalPosition == "002" & verticalPosition == "502" |
+        horizontalPosition == "002" & verticalPosition == "503")
+
+
+swc_0507_go %>%
+        group_by(horizontalPosition, verticalPosition) %>%
+        ggplot(aes(x= endDateTime,y= VSWCMean, 
+                   color = verticalPosition)) +
+                     geom_line() + labs(y='Mean VSWC', x = 'Time') +
+        facet_wrap(vars(horizontalPosition)) + theme_light() +
+        ggtitle("Quality Filtered 30 min. ONAQ Mean VSWC")
+
+```
+
+Aligning timeseries: filtering by start time (GMT)
+
+GMT is 7 hours ahead
+
+Mountain standard time 8:00am = 15:00 GMT same day
+
+Mountain standard time 8:00pm = 03:00 GMT next day
+```{r align}
+
+#filtering start times beginning 03:00 GMT May 05 (8:00pm MST)
+#filtering for May 05 - July 2020 
+ec_aligned <- onaq.qc %>%
+    filter_by_time(.date_var = timeBgn,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
+
+swc_aligned <- swc_0507_go %>%
+    filter_by_time(.date_var = startDateTime,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
+
+pcp_aligned <- pcp_0507_qc %>%
+    filter_by_time(.date_var = startDateTime,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
+
+```
+
+Removing constant drizzle from precip. data
+```{r pcp_dp}
+#viz
+p1 <- ggplot(pcp_aligned, aes(x= endDateTime, y= priPrecipBulk)) +
+                geom_line() +
+                geom_hline(yintercept = 0.1, color = "red") +
+                labs(y = "Precipitation (mm)", x = "Time") +
+                ggtitle("ONAQ Bulk Precip. May - July, 2020",
+  subtitle = " Quality filtered 5 min data with suggested drizzle <= 0.1")
+p1
+
+#Checking for constant drizzle
+density(pcp_aligned$priPrecipBulk)
+plot(density(pcp_aligned$priPrecipBulk), 
+     xlim = c(-0.01, 0.5), ylim = c(0, 1.5),
+     main = "Quality Filtered Primary Precip.")
+abline(v = 0.2, col = "blue")
+
+#try 0.2 for cutoff
+#removing drizzle, setting everything less than and = 0.2 to zero
+pcp_aligned$bulk_nodrizz <- ifelse(pcp_aligned$priPrecipBulk > 0.2, pcp_aligned$priPrecipBulk, 0)
+
+#viz: time and quality filtered, drizzle removed
+p3 <- ggplot(pcp_aligned, aes(x= endDateTime, y= bulk_nodrizz)) +
+              geom_line() +
+              geom_hline(yintercept = 0.2, color = "red") +
+              labs(y = "Precipitation (mm)", x = "Time") +
+            ggtitle("Quality Filtered ONAQ Bulk Precip. May - July, 2020",
+    subtitle = "5 min data with suggested drizzle <= 0.2 mm set to zero")
+
+p3
+
+```
+
+Time aggregation to 12-hour blocks
+```{r time_agg}
+#aggregating by time
+#add a col for the time aggregation, set to datetime 
+#summarize by sum pcp, count records, count missing, calc. percent complete  
+pcp_12h <- pcp_aligned %>%
+            mutate(t = as.POSIXct(cut(endDateTime, breaks = "12 hour")),
+                "%Y-%m-%d %H:%M:%S", tz = "GMT")  %>%
+            group_by(t) %>% #group by time
+            summarise(bulk_precip = sum(bulk_nodrizz, na.rm = TRUE),
+            n = n(),
+            na = sum(is.na(bulk_nodrizz)),
+            percent_complete = 1 - sum(is.na(bulk_nodrizz))/n())
+
+#viz: 12 hr aggregated with 0.2 drizzle removed
+p4 <- ggplot() +
+          geom_line(data = pcp_12h, aes(x= t, y= bulk_precip)) +
+          labs(y = "Precipitation (mm)", x = "Time") +
+          ggtitle("12 Hr. ONAQ Precip. May - July, 2020",
+          subtitle = "0.2 mm drizzle removed")
+p4
+
+#time aggregation to 12 hour blocks, even with missing data
+ec_12h <- ec_aligned %>%
+      mutate(t = as.POSIXct((cut(timeEnd, breaks = "12 hour")),
+                            "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
+      group_by(t) %>% #group by time interval
+      summarise(mean_nsae_h2o = mean(data.fluxH2o.nsae.flux, na.rm = T), 
+      n = n(),
+      na = sum(is.na(data.fluxH2o.nsae.flux)),
+      percent_complete = 1 - sum(is.na(data.fluxH2o.nsae.flux))/n())
+
+#plotting filtered 12hr aggregated H2O NSAE 
+p5 <- ec_12h %>%
+        ggplot(aes(x= t,y = mean_nsae_h2o)) +
+                geom_point() +
+                geom_line() + labs(x = "Time", y ='NSAE H2O Flux (Wm-2)') +
+                theme_light() +
+        ggtitle(label = "Quality Filtered NSAE H2O Flux",
+        subtitle = "Time Aggregated to 12 Hour Mean")
+p5
+
+#keeping h-pos, v-pos and aggregating by time
+#add a col for the time aggregation, set to datetime 
+#group by h-pos, v-pos and time
+#summarize by mean vswc 
+swc_12h <- swc_aligned %>%
+      mutate(t = as.POSIXct((cut(endDateTime, breaks = "12 hour")),
+                            "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
+      group_by(horizontalPosition, verticalPosition, t) %>% 
+      summarise(mean_vswc = mean(VSWCMean, na.rm = T), 
+      n = n(),
+      na = sum(is.na(VSWCMean)),
+      percent_complete = 1 - sum(is.na(VSWCMean))/n())
+
+p6 <- swc_12h %>%
+        group_by(horizontalPosition, verticalPosition) %>%
+        ggplot(aes(x= t,y= mean_vswc, 
+                   color = verticalPosition)) +
+                   geom_line() + labs(y='Mean VSWC') +
+        facet_wrap(vars(horizontalPosition)) + theme_light() +
+        ggtitle("Quality Filtered 12 Hr. ONAQ Mean VSWC") 
+p6
+```
+
+Data Quality for LE, about 35% missing data
+```{r dq}
+p7 <- ec_12h %>%
+        ggplot(aes(x= t,y = mean_nsae_h2o, color = percent_complete)) +
+                geom_point() +
+                geom_line() + labs(x = "Time", y ='NSAE H2O Flux (Wm-2)') +
+                theme_light() +
+        ggtitle(label = "Quality Filtered NSAE H2O Flux",
+        subtitle = "Time Aggregated to 12 Hour Mean") 
+       
+p7
+
+```
+Writing file for Summer 2020 data
+
+VSWC data:
+
+horizontal position 2, vertical positions 502 and 503
+horizontal position 5, vertical positions 501
+
+
+```{r, eval = FALSE, echo = FALSE}
+#writing file for 12 hour LE data for 05/20 to 07/20
+#write.csv(ec_12h, file = "le_nsae_onaq_12hour_exdset2_05072020.csv")
+
+#writing file for 12 hour VSWC data for 05/20 to 07/20
+#write.csv(swc_12h, file = "swc_onaq_12hour_exdset2_05072020.csv")
+
+#writing file for 12 hour Precip. data for 05/20 to 07/20
+#write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")
+```
