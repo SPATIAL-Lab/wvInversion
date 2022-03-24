@@ -41,23 +41,39 @@ dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_1" = p*1e-3,
            "phi_1.data" = l1, "phi_2.data" = l2, "phi_3.data" = l3)
 
 parms = c("phi_1", "phi_2", "adv_1_2", "adv_2_3", "adv_3_4", 
-          "diff_1_2", "diff_2_3", "diff_3_4", "et", 
+          "diff_1_2", "diff_2_3", "diff_3_4", "et", "pre",
           "e_frac", "t_frac_1", "k_s", "b")
 
 rmod = jags.parallel(model.file = "code/model_onaq.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 3, n.iter = 50, n.burnin = 10, n.thin = 1)
+                     n.chains = 3, n.iter = 500, n.burnin = 100, n.thin = 1)
 
 sl = rmod$BUGSoutput$sims.list
 
 #Compare soil phi timeseries
-plot(apply(sl$phi_1, 2, mean), type = "l", col = "red")
+plot(apply(sl$phi_1, 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3))
 lines(phi_1.data)
 lines(apply(sl$phi_2, 2, mean), lty = 3, col = "red")
 lines(phi_2.data, lty = 3)
 
 #Compare ET timeseries
-plot(etp[,1], type = "l")
-lines(apply(sl$et, 2, mean), col = "red")
+plot(etp[,1]*1e-3, type = "l")
+lines(2:length(p), apply(sl$et, 2, mean), col = "red")
 
+#Compare PCP timeseries
+plot(p*1e-3, type = "l")
+lines(2:length(p), apply(sl$pre, 2, mean), col = "red")
+
+#Soil phi w efrac overlay
+par(mar= c(5,4,1,4))
+plot(apply(sl$phi_1, 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3),
+     ylab = "SWC")
+lines(phi_1.data)
+lines(apply(sl$phi_2, 2, mean), lty = 3, col = "red")
+lines(phi_2.data, lty = 3)
+par(new = TRUE)
+plot(2:length(p), apply(sl$e_frac, 2, mean), type = "l", col = "blue", 
+     xlab = "", ylab = "", axes = FALSE)
+axis(4)
+mtext("Evap fraction", side = 4, line = 2.2, col = "blue")

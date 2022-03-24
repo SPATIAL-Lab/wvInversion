@@ -2,20 +2,20 @@ model {
   
   #data model 
   for(i in 2:length(phi_1.data)){
-    phi_1.data[i] ~ dnorm(phi_1[i], 1/(0.001^2))
-    phi_2.data[i] ~ dnorm(phi_2[i], 1/(0.001^2))
-    phi_3.data[i] ~ dnorm(phi_3[i], 1/(0.001^2))
+    phi_1.data[i] ~ dnorm(phi_1[i], 1/(0.005^2))
+    phi_2.data[i] ~ dnorm(phi_2[i], 1/(0.005^2))
+    phi_3.data[i] ~ dnorm(phi_3[i], 1/(0.005^2))
   }
   
   #process model
   for(i in 2:length(phi_1.data)){
     phi_1[i] = phi_1[i-1] + phi_1.delta[i] / thick_1
     phi_1.delta[i] = -diff_1_2[i] - adv_1_2[i] + 
-      min(SWD_1[i-1], pre_1[i] - runoff_1[i]) - evap_1[i] - transp_1[i]
+      min(SWD_1[i-1], pre[i] - runoff_1[i]) - evap_1[i] - transp_1[i]
     
     phi_2[i] = phi_2[i-1] + phi_2.delta[i] / thick_2
     phi_2.delta[i] = diff_1_2[i] - diff_2_3[i] + adv_1_2[i] -
-      adv_2_3[i] + max(0, pre_1[i] - runoff_1[i] - SWD_1[i-1]) - transp_2[i]
+      adv_2_3[i] + max(0, pre[i] - runoff_1[i] - SWD_1[i-1]) - transp_2[i]
     
     phi_3[i] = phi_3[i-1] + phi_3.delta[i] / thick_3
     phi_3.delta[i] = diff_2_3[i] + adv_2_3[i] - adv_3_4[i]
@@ -25,10 +25,10 @@ model {
     transp_1[i] = et[i] * (1 - e_frac[i]) * t_frac_1
     transp_2[i] = et[i] * (1 - e_frac[i]) * (1 - t_frac_1)
     #total ET - the min statement keeps et from drying upper layer below phi = 0.005
-    et[i] = min(etx[i] * ET[i, 1], thick_1 * phi_1[i-1] / 
+    et[i] = min(etx[i], thick_1 * phi_1[i-1] / 
                   (e_frac[i] + (1 - e_frac[i]) * t_frac_1) - 0.005)
     e_frac[i] ~ dunif(0, 1)    
-    etx[i] ~ dgamma(20, 20)
+    etx[i] ~ dnorm(ET[i,1], 1/ET[i,2]^2)I(0,)
     
     #diffusion
     diff_1_2[i] = mean(c(adv_1_2[i], adv_2_3[i])) * 
@@ -56,10 +56,11 @@ model {
 
     #runoff
     runoff_1[i] = pre_x[i] * (pre_x[i] / (pre_x[i] + SWD_eff[i-1]))
-    pre_x[i] = max(pre_1[i] - SWD_1[i-1], 0)
+    pre_x[i] = max(pre[i] - SWD_1[i-1], 0)
     SWD_1[i-1] = (phi_s - phi_1[i-1]) * thick_1
     SWD_eff[i-1] = SWD_2[i-1] * (1 - exp(-k_dt * delta_t))
     SWD_2[i-1] = (phi_s - phi_2[i-1]) * thick_2
+    pre[i] ~ dnorm(pre_1[i], 1/1e-4^2)T(0,)
   }
   
   #initial condition
@@ -71,7 +72,7 @@ model {
   #vertical distribution of transpiration
   #et.tau = 1 / 0.0002 ^ 2
 
-  thick_1 = 0.1
+  thick_1 = 0.05
   thick_2 = 0.2
   thick_3 = 2
   
@@ -79,17 +80,17 @@ model {
   c = 2 * b + 3
   a = -k_s * 8.64e4
 
-  t_frac_1 = 0.1
-  phi_s = 0.22
-  k_s = 7.1e-6
+#  t_frac_1 = 0.1
+#  phi_s = 0.4
+#  k_s = 7.1e-6
   b = 8
-  k_dt = 3
-  psi_s = -0.62 
+#  k_dt = 3
+#  psi_s = -0.62 
 
-#  t_frac_1 ~ dbeta(2, 4)    
-#  phi_s ~ dunif(0.4, 0.45)
-#  k_s ~ dunif(1e-7, 1e-5)
-#  b ~ dunif(2, 18)
-#  k_dt ~ dunif(2, 4)
-#  psi_s ~ dunif(-0.66, -0.58) 
+  t_frac_1 ~ dbeta(2, 4)    
+  phi_s ~ dunif(0.4, 0.45)
+  k_s ~ dunif(1e-7, 1e-5)
+#  b ~ dunif(4, 12)
+  k_dt ~ dunif(2, 4)
+  psi_s ~ dunif(-0.66, -0.58) 
 }
