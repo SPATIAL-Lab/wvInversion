@@ -1,5 +1,32 @@
 library(R2jags)
 
+pcp = read.csv("data/pcp_onaq_12hour_exdset2_05072020.csv")
+swc = read.csv("data/swc_onaq_12hour_exdset2_05072020.csv")
+le = read.csv("data/le_nsae_onaq_12hour_exdset2_05072020.csv")
+
+#all timesteps in model
+ts = pcp$t
+
+#remove any NAs from pcp
+pcp.narm = pcp[!is.na(pcp$bulk_precip),]
+
+#remove NAs from le
+le.narm = le[!(is.na(le$mean_nsae_h2o)),]
+
+
+#get individual soil depth series
+swc1 = swc[swc$verticalPosition == 501,]
+swc2 = swc[swc$verticalPosition == 502,]
+swc3 = swc[swc$verticalPosition == 503,]
+
+#remove NAs from soil series
+swc1 = swc1[!(is.na(swc1$mean_vswc)),]
+swc2 = swc2[!(is.na(swc2$mean_vswc)),]
+swc3 = swc3[!(is.na(swc3$mean_vswc)),]
+
+
+
+
 #time parameters
 d = 60 * 24
 delta_t = 1/24
