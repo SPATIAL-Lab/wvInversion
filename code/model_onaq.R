@@ -72,8 +72,8 @@ model {
   #vertical distribution of transpiration
   #et.tau = 1 / 0.0002 ^ 2
 
-  thick_1 = 0.05
-  thick_2 = 0.2
+  thick_1 = 0.06
+  thick_2 = 0.1
   thick_3 = 2
   
   #advection

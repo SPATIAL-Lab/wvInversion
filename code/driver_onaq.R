@@ -45,7 +45,7 @@ parms = c("phi_1", "phi_2", "phi_3", "adv_1_2", "adv_2_3", "adv_3_4",
 rmod = jags.parallel(model.file = "code/model_onaq.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 3, n.iter = 500, n.burnin = 100, n.thin = 1)
+                     n.chains = 3, n.iter = 1000, n.burnin = 200, n.thin = 1)
 
 #Shorthand for posterior parameters
 sl = rmod$BUGSoutput$sims.list
@@ -76,6 +76,6 @@ lines(apply(sl$phi_2, 2, mean), lty = 2, col = "red")
 lines(phi_2.data, lty = 2)
 par(new = TRUE)
 plot(2:length(p), apply(sl$e_frac, 2, mean), type = "l", col = "blue", 
-     xlab = "", ylab = "", axes = FALSE)
+     lty = 3, xlab = "", ylab = "", axes = FALSE)
 axis(4)
 mtext("Evap fraction", side = 4, line = 2.2, col = "blue")
