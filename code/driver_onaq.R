@@ -32,17 +32,17 @@ swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 l1 = swc$mean_vswc[swc$verticalPosition == 501]
 l2 = swc$mean_vswc[swc$verticalPosition == 502]
 l3 = swc$mean_vswc[swc$verticalPosition == 503]
+l = cbind(l1, l2, l3)
 
 #Set up input
-dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_1" = p*1e-3,
-           "phi_1.data" = l1, "phi_2.data" = l2, "phi_3.data" = l3)
+dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3,
+           "phi.data" = l, "thick" = c(0.06, 0.1, 0.2),
+           "alpha" = c(2, 2, 1), "nl" = ncol(l), "nt" = nrow(l))
 
-parms = c("phi_1", "phi_2", "phi_3", "adv_1_2", "adv_2_3", "adv_3_4", 
-          "diff_1_2", "diff_2_3", "diff_3_4", "et", "pre",
-          "e_frac", "t_frac_1", "k_s", "phi_s")
+parms = c("phi", "adv", "diff", "et", "pre", "e_frac", "t_frac")
 
 #Run inversion
-rmod = jags.parallel(model.file = "code/model_onaq.R", 
+rmod = jags.parallel(model.file = "code/model_generic.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
                      n.chains = 3, n.iter = 1000, n.burnin = 200, n.thin = 1)
@@ -52,12 +52,12 @@ sl = rmod$BUGSoutput$sims.list
 
 #Some useful plots
 ##Compare soil phi timeseries
-plot(apply(sl$phi_1, 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3))
-lines(phi_1.data)
-lines(apply(sl$phi_2, 2, mean), lty = 2, col = "red")
-lines(phi_2.data, lty = 2)
-lines(apply(sl$phi_3, 2, mean), lty = 3, col = "red")
-lines(phi_3.data, lty = 3)
+plot(apply(sl$phi[,,1], 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3))
+lines(l[,1])
+for(i in 2:ncol(l)){
+  lines(apply(sl$phi[,,i], 2, mean), lty = i, col = "red")
+  lines(l[,i], lty = i)
+}
 
 ##Compare ET timeseries
 plot(etp[,1]*1e-3, type = "l")
