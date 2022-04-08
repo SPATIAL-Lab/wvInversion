@@ -22,7 +22,7 @@ model {
         infil[i, j] - transp[i, j]
     }
     
-    phi.delta[i, nl] = diff[i, nl-1] + adv[i, nl-1] - adv[i, nl]
+    phi.delta[i, nl] = diff[i, nl-1] + adv[i, nl-1] - adv[i, nl] - transp[i, nl]
     
     # transpiration
     for(j in 1:nl){
@@ -80,7 +80,7 @@ model {
   t_frac ~ ddirch(alpha)  
   #t_frac_1 = 0.1
 
-  phi_s ~ dunif(0.4, 0.45)
+  phi_s ~ dunif(0.35, 0.45)
   #phi_s = 0.4
 
   k_s ~ dunif(1e-7, 1e-5)

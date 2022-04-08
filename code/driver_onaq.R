@@ -69,11 +69,11 @@ lines(2:length(p), apply(sl$pre, 2, mean), col = "red")
 
 ##Soil phi w efrac overlay
 par(mar= c(5,4,1,4))
-plot(apply(sl$phi_1, 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3),
+plot(apply(sl$phi[,,1], 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3), 
      ylab = "SWC")
-lines(phi_1.data)
-lines(apply(sl$phi_2, 2, mean), lty = 2, col = "red")
-lines(phi_2.data, lty = 2)
+lines(l[,1])
+lines(apply(sl$phi[,,2], 2, mean), lty = 2, col = "red")
+lines(l[,2], lty = 2)
 par(new = TRUE)
 plot(2:length(p), apply(sl$e_frac, 2, mean), type = "l", col = "blue", 
      lty = 3, xlab = "", ylab = "", axes = FALSE)
