@@ -29,15 +29,15 @@ etp = as.matrix(etdf)
 #Soil water content
 swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 ##pull depths
-l1 = swc$mean_vswc[swc$verticalPosition == 501]
-l2 = swc$mean_vswc[swc$verticalPosition == 502]
-l3 = swc$mean_vswc[swc$verticalPosition == 503]
-l = cbind(l1, l2, l3)
+ts = et$t
+swc$ti = match(swc$t, ts)
+swc$di = match(swc$v, c(501, 502, 503, 504, 505))
+l = cbind(swc$ti, swc$di, swc$mean_vswc)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3,
-           "phi.data" = l, "thick" = c(0.06, 0.1, 0.2),
-           "alpha" = c(2, 2, 1), "nl" = ncol(l), "nt" = nrow(l))
+           "phi.data" = l[l[,2]<4,], "thick" = c(0.06, 0.1, 0.1),
+           "alpha" = c(2, 2, 1), "nl" = 3, "nt" = length(p))
 
 parms = c("phi", "adv", "diff", "et", "pre", "e_frac", "t_frac")
 
@@ -45,18 +45,18 @@ parms = c("phi", "adv", "diff", "et", "pre", "e_frac", "t_frac")
 rmod = jags.parallel(model.file = "code/model_generic.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 3, n.iter = 1000, n.burnin = 200, n.thin = 1)
+                     n.chains = 8, n.iter = 1000, n.burnin = 200, n.thin = 1)
 
 #Shorthand for posterior parameters
 sl = rmod$BUGSoutput$sims.list
 
 #Some useful plots
 ##Compare soil phi timeseries
-plot(apply(sl$phi[,,1], 2, mean), type = "l", col = "red", ylim = c(0.05, 0.3))
-lines(l[,1])
-for(i in 2:ncol(l)){
-  lines(apply(sl$phi[,,i], 2, mean), lty = i, col = "red")
-  lines(l[,i], lty = i)
+plot(apply(sl$phi[,,1], 2, mean), type = "l", ylim = c(0.05, 0.3))
+lines(l[l[,2] == 1,1], l[l[,2] == 1,3], lty = 3)
+for(i in 2:5){
+  lines(apply(sl$phi[,,i], 2, mean), col = i)
+  lines(l[l[,2] == i,1], l[l[,2] == i,3], lty = 3, col = i)
 }
 
 ##Compare ET timeseries

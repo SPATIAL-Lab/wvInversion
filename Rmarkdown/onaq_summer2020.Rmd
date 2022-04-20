@@ -123,7 +123,9 @@ swc_0507_go <-  swc_0507_qc %>%
         filter(horizontalPosition == "005" &
                verticalPosition == "501" |
         horizontalPosition == "002" & verticalPosition == "502" |
-        horizontalPosition == "002" & verticalPosition == "503")
+        horizontalPosition == "002" & verticalPosition == "503" |
+        horizontalPosition == "002" & verticalPosition == "504" |
+        horizontalPosition == "001" & verticalPosition == "505")
 
 
 swc_0507_go %>%
@@ -280,7 +282,8 @@ Writing file for Summer 2020 data
 
 VSWC data:
 
-horizontal position 2, vertical positions 502 and 503
+horizontal position 1, vertical position 505
+horizontal position 2, vertical positions 502-504
 horizontal position 5, vertical positions 501
 
 
@@ -289,7 +292,7 @@ horizontal position 5, vertical positions 501
 #write.csv(ec_12h, file = "le_nsae_onaq_12hour_exdset2_05072020.csv")
 
 #writing file for 12 hour VSWC data for 05/20 to 07/20
-#write.csv(swc_12h, file = "swc_onaq_12hour_exdset2_05072020.csv")
+write.csv(swc_12h, file = "data/swc_onaq_12hour_exdset3_05072020.csv")
 
 #writing file for 12 hour Precip. data for 05/20 to 07/20
 #write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")

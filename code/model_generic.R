@@ -1,10 +1,8 @@
 model {
   
   # data model 
-  for(i in 2:nt){
-    for(j in 1:nl){
-      phi.data[i, j] ~ dnorm(phi[i, j], 1/(0.005^2))
-    }
+  for(i in length(phi.data[,1])){
+    phi.data[i, 3] ~ dnorm(phi[phi.data[i, 1], phi.data[i, 2]], 1/(0.005^2))
   }
   
   # process model
@@ -69,7 +67,7 @@ model {
   
   # initial condition
   for(j in 1:nl){
-    phi[1, j] = phi.data[1, j]
+    phi[1, j] ~ dunif(0.15, 0.3)
   }
 
   # derived parms
@@ -80,7 +78,7 @@ model {
   t_frac ~ ddirch(alpha)  
   #t_frac_1 = 0.1
 
-  phi_s ~ dunif(0.35, 0.45)
+  phi_s ~ dunif(0.4, 0.45)
   #phi_s = 0.4
 
   k_s ~ dunif(1e-7, 1e-5)
