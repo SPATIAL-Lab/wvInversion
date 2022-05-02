@@ -1,7 +1,7 @@
 model {
   
   # data model 
-  for(i in length(phi.data[,1])){
+  for(i in 1:length(phi.data[,1])){
     phi.data[i, 3] ~ dnorm(phi[phi.data[i, 1], phi.data[i, 2]], 1/(0.005^2))
   }
   
@@ -81,7 +81,7 @@ model {
   phi_s ~ dunif(0.4, 0.45)
   #phi_s = 0.4
 
-  k_s ~ dunif(1e-7, 1e-5)
+  k_s ~ dgamma(10, 1e5)
   #k_s = 7.1e-6
   
   #b ~ dunif(4, 12)

@@ -36,16 +36,19 @@ l = cbind(swc$ti, swc$di, swc$mean_vswc)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3,
-           "phi.data" = l[l[,2]<4,], "thick" = c(0.06, 0.1, 0.1),
-           "alpha" = c(2, 2, 1), "nl" = 3, "nt" = length(p))
+           "phi.data" = l, "thick" = c(0.06, 0.1, 0.1, 0.2, 1),
+           "alpha" = c(2, 2, 1, 1, 1), "nl" = 5, "nt" = length(p))
 
-parms = c("phi", "adv", "diff", "et", "pre", "e_frac", "t_frac")
+parms = c("phi", "adv", "diff", "et", "k_s", "phi_s", "psi_s", 
+          "k_dt", "pre", "e_frac", "t_frac")
 
 #Run inversion
+pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 8, n.iter = 1000, n.burnin = 200, n.thin = 1)
+                     n.chains = 4, n.iter = 1000, n.burnin = 500, n.thin = 1)
+(proc.time() - pt)[3]
 
 #Shorthand for posterior parameters
 sl = rmod$BUGSoutput$sims.list
