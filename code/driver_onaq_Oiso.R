@@ -65,7 +65,7 @@ dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3,
            "nl" = 5, "nt" = length(p))
 
 parms = c("phi", "adv", "diff", "et", "k_s", "phi_s", "psi_s", 
-          "k_dt", "pre", "e_frac", "t_frac", "d_o")
+          "k_dt", "pre", "e_frac", "t_frac", "d_o", "evap_r", "p_o", "diff_o")
 
 #Run inversion
 pt = proc.time()
@@ -75,6 +75,7 @@ rmod = jags.parallel(model.file = "code/model_generic_oIso.R",
                      n.chains = 4, n.iter = 1000, n.burnin = 500, n.thin = 1)
 (proc.time() - pt)[3]
 
+View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
 sl = rmod$BUGSoutput$sims.list
 
@@ -107,3 +108,12 @@ plot(2:length(p), apply(sl$e_frac, 2, mean), type = "l", col = "blue",
      lty = 3, xlab = "", ylab = "", axes = FALSE)
 axis(4)
 mtext("Evap fraction", side = 4, line = 2.2, col = "blue")
+
+##Compare soil isotope timeseries
+plot(apply(sl$d_o[,,1], 2, mean), type = "l", ylim = c(-15, 5))
+points(d_o[d_o[,2] == 1,1], d_o[d_o[,2] == 1,3])
+for(i in 2:5){
+  lines(apply(sl$d_o[,,i], 2, mean), col = i)
+  points(d_o[d_o[,2] == i,1], d_o[d_o[,2] == i,3], col = i)
+}
+

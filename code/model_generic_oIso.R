@@ -38,9 +38,9 @@ model {
         (phi_o[i-1, j] - phi_o[i-1, j+1]) / ((thick[j] + thick[j+1]) / 2)
     }
     
-    # evaporation
+    # evaporation, fully diffusive
     evap_r[i] = (evap_a[i] * r_o[i-1, 1] - h[i] * r_a[i]) / 
-      ((1 - h[i]) * 0.9723)
+      ((1 - h[i]) * 1.028489)
     #evap_a is a function of temperature, for now fixed
     evap_a[i] = 1 / 1.010
     h[i] = 0.20
@@ -127,7 +127,8 @@ model {
   t_frac ~ ddirch(alpha)  
   #t_frac_1 = 0.1
 
-  phi_s ~ dunif(0.4, 0.45)
+  phi_s ~ dgamma(100, 250)
+  #phi_s ~ dunif(0.4, 0.45)
   #phi_s = 0.4
 
   k_s ~ dgamma(10, 1e5)
