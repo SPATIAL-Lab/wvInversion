@@ -8,7 +8,7 @@ editor_options:
 ---
 Goals for 5/2020 through 7/2020:
 
-1. Load: precip, LE and VSWC
+1. Load: precip, LE, Stemp, VSWC, and precip d18O
 2. Align: start date/time
 3. Aggregate: 12-hour time blocks
 
@@ -167,6 +167,31 @@ t_0507_qc %>%
         ggtitle("Quality Filtered 30 min. ONAQ Mean Stemp")
 
 ```
+
+```{r}
+#DICEE downscaled precipitation files downloaded from:
+#https://www.hydroshare.org/resource/e74edc35d45441579d51286ea01b519f/
+dop.m = read.csv("bigdata/daily_p_d18O_mean.csv")
+dop.sd = read.csv("bigdata/daily_p_d18O_std.csv")
+#Keep just ONAQ
+dop = data.frame(date = as.POSIXct(dop.m$Date), d18O = dop.m$ONAQ, d18OSD = dop.sd$ONAQ)
+#Remove NAs
+dop = dop[dop$d18O != -9999,]
+#Parse daily values to 12-hour time series using nearest neighbor
+dop = dop[dop$date > "2020-04-30" & dop$date < "2020-08-01",]
+p = read.csv("data/pcp_onaq_12hour_exdset3_05072020.csv")
+ts = as.POSIXct(p$t)
+ts.do.m = ts.do.sd = numeric(length(ts))
+for(i in seq_along(ts)){
+  toff = abs(ts[i] - dop$date)
+  tind = match(min(toff), toff)
+  ts.do.m[i] = dop$d18O[tind]
+  ts.do.sd[i] = dop$d18OSD[tind]
+}
+dop = data.frame("dateTime" = ts, "d18O.m" = ts.do.m, 
+                 "d18O.sd" = ts.do.sd)
+```
+
 
 Aligning timeseries: filtering by start time (GMT)
 
@@ -351,6 +376,9 @@ write.csv(swc_12h, file = "data/swc_onaq_12hour_exdset3_05072020.csv")
 
 #writing file for 12 hour Stemp data for 05/20 to 07/20
 write.csv(t_12h, file = "data/st_onaq_12hour_05072020.csv")
+
+#writing file for 12 hour precip d18O data for 05/20 to 07/20
+write.csv(dop, file = "data/d18Op_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour Precip. data for 05/20 to 07/20
 #write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")

@@ -38,6 +38,10 @@ l = cbind(swc$ti, swc$di, swc$mean_vswc)
 st = read.csv("data/st_onaq_12hour_05072020.csv")
 st = st$mean_temp + 273
 
+#Precipitation d18O
+p_o_pri = read.csv("data/d18Op_onaq_12hour_05072020.csv")
+p_o_pri = p_o_pri[,3:4]
+
 #Made up soil water isotopes
 d_o = rbind(c(10, 1, -10),
             c(10, 2, -11),
@@ -59,8 +63,6 @@ d_o = rbind(c(10, 1, -10),
             c(150, 2, -7),
             c(150, 4, -11),
             c(120, 1, -1))
-#Made up precipitation timeseries
-p_o_pri = rep(-15, length(p))
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,

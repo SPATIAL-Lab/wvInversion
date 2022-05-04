@@ -49,7 +49,7 @@ model {
     
     # precip
     p_o[i] = (p_o.del[i] / 1000 + 1) * 0.0020052
-    p_o.del[i] ~ dnorm(p_o_pri[i], 1)
+    p_o.del[i] ~ dnorm(p_o_pri[i, 1], p_o_pri[i, 2])
   }
   
   # process model
