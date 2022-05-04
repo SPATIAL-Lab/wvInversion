@@ -138,6 +138,36 @@ swc_0507_go %>%
 
 ```
 
+soil temp loading
+```{r stemp_loading,results = "hide", message= FALSE}
+#loading 30 minute ONAQ stemp data from April - August 2020, need May - July
+t_0408 <- loadByProduct(dpID="DP1.00041.001",
+                           site= "ONAQ",
+                           timeIndex = "30",
+                           startdate="2020-04",
+                           enddate="2020-08",
+                           check.size = F)
+
+#30 min data df for 4/1/20 to 8/31/20
+t_0408 <- t_0408$ST_30_minute
+
+#filtering for May - July 2020 and by unflagged data
+t_0507_qc <- t_0408 %>%
+    filter_by_time(.date_var = endDateTime,
+                   .start_date = "2020-04-30 23:30:00",
+                   .end_date = "2020-08-01 00:00:00") %>%
+    filter(finalQF == "0")
+
+t_0507_qc %>%
+        group_by(horizontalPosition, verticalPosition) %>%
+        ggplot(aes(x= endDateTime,y= soilTempMean, 
+                   color = verticalPosition)) +
+                     geom_line() + labs(y='Mean Stemp', x = 'Time') +
+        facet_wrap(vars(horizontalPosition)) + theme_light() +
+        ggtitle("Quality Filtered 30 min. ONAQ Mean Stemp")
+
+```
+
 Aligning timeseries: filtering by start time (GMT)
 
 GMT is 7 hours ahead
@@ -155,6 +185,11 @@ ec_aligned <- onaq.qc %>%
                    .end_date = "2020-08-01 00:00:00")
 
 swc_aligned <- swc_0507_go %>%
+    filter_by_time(.date_var = startDateTime,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
+
+t_aligned <- t_0507_qc %>%
     filter_by_time(.date_var = startDateTime,
                    .start_date = "2020-05-05 03:00:00",
                    .end_date = "2020-08-01 00:00:00")
@@ -263,6 +298,26 @@ p6 <- swc_12h %>%
         facet_wrap(vars(horizontalPosition)) + theme_light() +
         ggtitle("Quality Filtered 12 Hr. ONAQ Mean VSWC") 
 p6
+
+#keeping h-pos, v-pos and aggregating by time
+#add a col for the time aggregation, set to datetime 
+#group by time, keep only v-pos 501
+#summarize by mean stemp
+t_aligned = t_aligned[t_aligned$verticalPosition == "501",]
+t_12h <- t_aligned %>%
+      mutate(t = as.POSIXct((cut(endDateTime, breaks = "12 hour")),
+                            "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
+      group_by(t) %>%
+      summarise(mean_temp = mean(soilTempMean, na.rm = T), 
+      n = n(),
+      na = sum(is.na(soilTempMean)),
+      percent_complete = 1 - sum(is.na(soilTempMean))/n())
+
+p7 <- t_12h %>%
+        ggplot(aes(x= t,y= mean_temp)) +
+                   geom_line() + labs(y='Mean Stemp') + theme_light() +
+        ggtitle("Quality Filtered 12 Hr. ONAQ Mean Stemp") 
+p7
 ```
 
 Data Quality for LE, about 35% missing data
@@ -293,6 +348,9 @@ horizontal position 5, vertical positions 501
 
 #writing file for 12 hour VSWC data for 05/20 to 07/20
 write.csv(swc_12h, file = "data/swc_onaq_12hour_exdset3_05072020.csv")
+
+#writing file for 12 hour Stemp data for 05/20 to 07/20
+write.csv(t_12h, file = "data/st_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour Precip. data for 05/20 to 07/20
 #write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")
