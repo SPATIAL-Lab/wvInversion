@@ -192,6 +192,20 @@ dop = data.frame("dateTime" = ts, "d18O.m" = ts.do.m,
                  "d18O.sd" = ts.do.sd)
 ```
 
+```{r}
+#Calibrated ONAQ water vapor d18O from Rich
+wv = read.csv("bigdata/ONAQ_wiso_2020.csv")
+wv$timeEnd = as.POSIXct(wv$timeEnd)
+wv$timeBgn = as.POSIXct(wv$timeBgn)
+
+#filtering for May - July 2020 and by unflagged data
+wv_0507 <- wv %>%
+    filter_by_time(.date_var = timeEnd,
+                   .start_date = "2020-04-30 23:59:59",
+                   .end_date = "2020-08-01 00:00:00")
+
+```
+
 
 Aligning timeseries: filtering by start time (GMT)
 
@@ -223,6 +237,12 @@ pcp_aligned <- pcp_0507_qc %>%
     filter_by_time(.date_var = startDateTime,
                    .start_date = "2020-05-05 03:00:00",
                    .end_date = "2020-08-01 00:00:00")
+
+wv_aligned = wv_0507 %>%
+  filter_by_time(.date_var = timeBgn,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
+
 
 ```
 
@@ -343,6 +363,29 @@ p7 <- t_12h %>%
                    geom_line() + labs(y='Mean Stemp') + theme_light() +
         ggtitle("Quality Filtered 12 Hr. ONAQ Mean Stemp") 
 p7
+
+#keeping v-pos and aggregating by time
+#add a col for the time aggregation, set to datetime 
+#group by h-pos, v-pos and time
+#summarize by mean vswc 
+wv_12h <- wv_aligned %>%
+      mutate(t = as.POSIXct((cut(timeEnd, breaks = "12 hour")),
+                            "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
+      group_by(level, t) %>% 
+      summarise(mean_d18O = mean(d18O, na.rm = TRUE),
+        mean_d2H = mean(d2H, na.rm = TRUE),
+        mean_spec_hum = mean(spec_hum, na.rm = TRUE),
+        n = n())
+
+p8 <- wv_12h %>%
+        group_by(level) %>%
+        ggplot(aes(x= t,y= mean_d18O, 
+                   color = level)) +
+                   geom_line() + labs(y='Mean d18O') +
+        facet_wrap(vars(level)) + theme_light() +
+        ggtitle("Quality Filtered 12 Hr. ONAQ Mean VSWC") 
+p8
+
 ```
 
 Data Quality for LE, about 35% missing data
@@ -379,6 +422,9 @@ write.csv(t_12h, file = "data/st_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour precip d18O data for 05/20 to 07/20
 write.csv(dop, file = "data/d18Op_onaq_12hour_05072020.csv")
+
+#writing file for 12 hour wv data for 05/20 to 07/20
+write.csv(wv_12h, file = "data/wvIso_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour Precip. data for 05/20 to 07/20
 #write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")
