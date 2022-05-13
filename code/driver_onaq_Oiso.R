@@ -1,13 +1,13 @@
 library(R2jags)
 
-#precip
+#precip - prior
 p = read.csv("data/pcp_onaq_12hour_exdset3_05072020.csv")
 ##check for NAs
 sum(is.na(p$bulk_precip))
 ##this is the vector of precip values, in mm
 p = p$bulk_precip
 
-#evapotranspiration
+#evapotranspiration - prior
 et = read.csv("data/le_nsae_onaq_12hour_exdset3_05072020.csv")
 ##complete timeseries, convert from w/m^2 to mm
 etdf = data.frame("et" = et$mean_nsae_h2o * 2.257e-6 * 3600, 
@@ -26,47 +26,48 @@ etdf$etsd[is.na(etdf$etsd)] = etsd[is.na(etdf$etsd)]
 ##make it a matrix
 etp = as.matrix(etdf)
 
-#Soil water content
+#Soil temperature - prior
+st = read.csv("data/st_onaq_12hour_05072020.csv")
+st = st$mean_temp + 273
+
+#Relative humidity - prior
+rh = read.csv("data/rh_onaq_12Hour_05072020.csv")
+rh = rh$mean_rh / 100
+
+#Precipitation d18O - prior
+p_o_pri = read.csv("data/d18Op_onaq_12hour_05072020.csv")
+p_o_pri = p_o_pri[,3:4]
+
+#BL water vapor isotopes - prior
+
+
+#Soil water content - data
 swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
-##pull depths
+##create time and depth indices
 ts = et$t
 swc$ti = match(swc$t, ts)
 swc$di = match(swc$v, c(501, 502, 503, 504, 505))
 l = cbind(swc$ti, swc$di, swc$mean_vswc)
 
-#Soil temperature
-st = read.csv("data/st_onaq_12hour_05072020.csv")
-st = st$mean_temp + 273
 
-#Precipitation d18O
-p_o_pri = read.csv("data/d18Op_onaq_12hour_05072020.csv")
-p_o_pri = p_o_pri[,3:4]
-
-#Made up soil water isotopes
-d_o = rbind(c(10, 1, -10),
-            c(10, 2, -11),
-            c(10, 3, -11),
-            c(10, 4, -11),
-            c(10, 5, -11),
-            c(35, 1, -7),
-            c(35, 3, -10.5),
-            c(35, 4, -11),
-            c(45, 1, -12),
-            c(45, 2, -11),
-            c(45, 4, -10.8),
-            c(100, 1, 0),
-            c(100, 2, -10),
-            c(100, 3, -11),
-            c(100, 4, -11),
-            c(100, 5, -11),
-            c(150, 1, 5),
-            c(150, 2, -7),
-            c(150, 4, -11),
-            c(120, 1, -1))
+#Soil water isotopes - data
+swi = read.csv("data/ONAQsoil.csv")
+swi$Date = as.POSIXct(swi$Date, format = "%m/%d/%Y %H:%M")
+swi$Date = swi$Date + 3600 * 15
+##time index
+swi = swi[swi$Date > min(ts) & swi$Date < max(ts),]
+swi$ti = match(swi$Date, as.POSIXct(ts))
+##depth index
+swi$di = rep(NA)
+for(i in 1:nrow(swi)){
+  swi$di[i] = switch(match(swi$Depth..cm.[i], c(5, 10, 15, 25, 40, 60, 100)),
+         1, 2, 2, 3, 4, 5, 5)
+}
+d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
-           "phi.data" = l, "thick" = c(0.06, 0.1, 0.1, 0.2, 1),
+           "phi.data" = l, "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
            "alpha" = c(1, 2, 2, 2, 1), "p_o_pri" = p_o_pri, "d_o.data" = d_o,
            "nl" = 5, "nt" = length(p))
 

@@ -168,6 +168,33 @@ t_0507_qc %>%
 
 ```
 
+relative humidity loading
+```{r rh_loading,results = "hide", message= FALSE}
+#loading 30 minute ONAQ stemp data from April - August 2020, need May - July
+rh_0408 <- loadByProduct(dpID="DP1.00098.001",
+                           site= "ONAQ",
+                           timeIndex = "30",
+                           startdate="2020-04",
+                           enddate="2020-08",
+                           check.size = F)
+
+#30 min data df for 4/1/20 to 8/31/20
+rh_0408 <- rh_0408$RH_30min
+
+#filtering for May - July 2020 and by unflagged data
+rh_0507_qc <- rh_0408 %>%
+    filter_by_time(.date_var = endDateTime,
+                   .start_date = "2020-04-30 23:30:00",
+                   .end_date = "2020-08-01 00:00:00") %>%
+    filter(RHFinalQF == "0", verticalPosition == "000")
+
+rh_0507_qc %>%
+        ggplot(aes(x = endDateTime, y = RHMean, color = verticalPosition)) +
+          geom_line() + labs(y='RH Mean', x = 'Time') + theme_light() +
+          ggtitle("Quality Filtered 30 min. ONAQ Mean Surface RH")
+
+```
+
 ```{r}
 #DICEE downscaled precipitation files downloaded from:
 #https://www.hydroshare.org/resource/e74edc35d45441579d51286ea01b519f/
@@ -243,6 +270,10 @@ wv_aligned = wv_0507 %>%
                    .start_date = "2020-05-05 03:00:00",
                    .end_date = "2020-08-01 00:00:00")
 
+rh_aligned = rh_0507_qc %>%
+  filter_by_time(.date_var = startDateTime,
+                   .start_date = "2020-05-05 03:00:00",
+                   .end_date = "2020-08-01 00:00:00")
 
 ```
 
@@ -386,6 +417,24 @@ p8 <- wv_12h %>%
         ggtitle("Quality Filtered 12 Hr. ONAQ Mean VSWC") 
 p8
 
+#aggregating by time
+#add a col for the time aggregation, set to datetime 
+#group by time summarize by mean RH
+rh_12h <- rh_aligned %>%
+      mutate(t = as.POSIXct((cut(endDateTime, breaks = "12 hour")),
+                            "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
+      group_by(t) %>%
+      summarise(mean_rh = mean(RHMean, na.rm = TRUE), 
+      n = n(),
+      na = sum(is.na(RHMean)),
+      percent_complete = 1 - sum(is.na(RHMean))/n())
+
+p9 <- rh_12h %>%
+        ggplot(aes(x = t,y = mean_rh)) +
+                   geom_line() + labs(y='Mean RH') + theme_light() +
+        ggtitle("Quality Filtered 12 Hr. ONAQ Mean Surface RH") 
+p9
+
 ```
 
 Data Quality for LE, about 35% missing data
@@ -425,6 +474,9 @@ write.csv(dop, file = "data/d18Op_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour wv data for 05/20 to 07/20
 write.csv(wv_12h, file = "data/wvIso_onaq_12hour_05072020.csv")
+
+#writing file for 12 hour wv data for 05/20 to 07/20
+write.csv(rh_12h, file = "data/rh_onaq_12hour_05072020.csv")
 
 #writing file for 12 hour Precip. data for 05/20 to 07/20
 #write.csv(pcp_12h, file = "pcp_onaq_12hour_exdset2_05072020.csv")

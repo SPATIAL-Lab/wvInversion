@@ -5,7 +5,7 @@ model {
     phi.data[i, 3] ~ dnorm(phi[phi.data[i, 1], phi.data[i, 2]], 1/(0.005^2))
   }
   for(i in 1:length(d_o.data[,1])){
-    d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1)
+    d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1/d_o.data[i, 4])
   }
   
   # isotopes
@@ -39,12 +39,11 @@ model {
     }
     
     # evaporation, fully diffusive
-    evap_r[i] = (r_o[i-1, 1] / evap_a[i] - h[i] * r_a[i]) / 
-      ((1 - h[i]) * 1.028489)
+    evap_r[i] = (r_o[i-1, 1] / evap_a[i] - rh[i] * r_a[i]) / 
+      ((1 - rh[i]) * 1.028489)
     # evap_a is a function of temperature, either add stochastic component or 
     # move out of MCMC
     evap_a[i] = exp((1.137e6 / st[i]^2 - 0.4156e3 / st[i] - 2.0667) / 1e3)
-    h[i] = 0.20
     r_a[i] = 0.001947
     
     # precip

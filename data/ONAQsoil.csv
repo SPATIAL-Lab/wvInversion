@@ -1,4 +1,4 @@
-﻿Date,Site,Profile,Cover,Depth (cm),Temperature ©,PicarroH2O (notes),Picarro O018 (notes),Picarro 2H (notes),Method,Picarro File O-18,Picarro File O-18 stDev,Picarro File H-2,Picarro File H-2 stDev,Calibrated O,Calibrated O SE,Calibrated H,Calibrated H SE,Calibrated Dexcess,Calibrated Dexcess SE
+Date,Site,Profile,Cover,Depth (cm),Temperature ©,PicarroH2O (notes),Picarro O018 (notes),Picarro 2H (notes),Method,Picarro File O-18,Picarro File O-18 stDev,Picarro File H-2,Picarro File H-2 stDev,Calibrated O,Calibrated O SE,Calibrated H,Calibrated H SE,Calibrated Dexcess,Calibrated Dexcess SE
 7/16/2019 0:00,ONAQ,2,Sage,5,21.8,21110,-10.8,-140,in-lab isowagon,-10.8,,-140,,1.008722507,0.490468645,-70.56049165,2.716251702,-78.63027171,4.772193495
 7/16/2019 0:00,ONAQ,2,Sage,15,22.3,20419,-20.9,-166,in-lab isowagon,-20.9,,-166,,-9.159418679,0.515010595,-96.99937099,2.852166844,-23.72402156,5.010983352
 7/16/2019 0:00,ONAQ,2,Sage,25,22.3,20805,-24.5,-180,in-lab isowagon,-24.5,,-180,,-12.75941868,0.515010595,-110.999371,2.852166844,-8.924021559,5.010983352
