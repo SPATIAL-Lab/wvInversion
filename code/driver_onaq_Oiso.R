@@ -41,6 +41,9 @@ p_o_pri = p_o_pri[,3:4]
 #BL water vapor isotopes - prior
 
 
+#Profile water vapor isotopes & SH - data
+
+
 #Soil water content - data
 swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 ##create time and depth indices
@@ -117,7 +120,7 @@ axis(4)
 mtext("Evap fraction", side = 4, line = 2.2, col = "blue")
 
 ##Compare soil isotope timeseries
-plot(apply(sl$d_o[,,1], 2, mean), type = "l", ylim = c(-15, 5))
+plot(apply(sl$d_o[,,1], 2, mean), type = "l", ylim = c(-13, 20))
 points(d_o[d_o[,2] == 1,1], d_o[d_o[,2] == 1,3])
 for(i in 2:5){
   lines(apply(sl$d_o[,,i], 2, mean), col = i)
