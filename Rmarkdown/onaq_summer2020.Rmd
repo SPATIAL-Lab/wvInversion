@@ -222,8 +222,8 @@ dop = data.frame("dateTime" = ts, "d18O.m" = ts.do.m,
 ```{r}
 #Calibrated ONAQ water vapor d18O from Rich
 wv = read.csv("bigdata/ONAQ_wiso_2020.csv")
-wv$timeEnd = as.POSIXct(wv$timeEnd)
-wv$timeBgn = as.POSIXct(wv$timeBgn)
+wv$timeEnd = as.POSIXct(wv$timeEnd, format = "%Y-%m-%d %H:%M:%S")
+wv$timeBgn = as.POSIXct(wv$timeBgn, format = "%Y-%m-%d %H:%M:%S")
 
 #filtering for May - July 2020 and by unflagged data
 wv_0507 <- wv %>%
@@ -403,14 +403,17 @@ wv_12h <- wv_aligned %>%
       mutate(t = as.POSIXct((cut(timeEnd, breaks = "12 hour")),
                             "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
       group_by(level, t) %>% 
-      summarise(mean_d18O = mean(d18O, na.rm = TRUE),
-        mean_d2H = mean(d2H, na.rm = TRUE),
-        mean_spec_hum = mean(spec_hum, na.rm = TRUE),
-        n = n())
+      summarise(d18O_m = mean(d18O, na.rm = TRUE),
+                d18O_sd = sd(d18O, na.rm = TRUE),
+                d2H_m = mean(d2H, na.rm = TRUE),
+                d2H_sd = sd(d2H, na.rm = TRUE),
+                sh_mean = mean(spec_hum, na.rm = TRUE),
+                sh_sd = sd(spec_hum, na.rm = TRUE),
+                n = n())
 
 p8 <- wv_12h %>%
         group_by(level) %>%
-        ggplot(aes(x= t,y= mean_d18O, 
+        ggplot(aes(x= t,y= d18O_m, 
                    color = level)) +
                    geom_line() + labs(y='Mean d18O') +
         facet_wrap(vars(level)) + theme_light() +

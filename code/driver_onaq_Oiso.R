@@ -39,7 +39,25 @@ p_o_pri = read.csv("data/d18Op_onaq_12hour_05072020.csv")
 p_o_pri = p_o_pri[,3:4]
 
 #BL water vapor isotopes - prior
-
+wviso = read.csv("data/wvIso_onaq_12hour_05072020.csv")
+wviso$t = as.POSIXct(wviso$t)
+bliso = wviso[wviso$level == 1,]
+bliso.ts = data.frame("t" = as.POSIXct(ts), "d18O_m" = rep(NA), "d18O_sd" = rep(NA))
+bliso.ts[,2:3] = bliso[match(as.POSIXct(ts), bliso$t),4:5]
+for(i in seq_along(bliso.ts$t)){
+  if(is.na(bliso.ts$d18O_m[i])){
+    j = k = i
+    while(j >= 1 & is.na(bliso.ts$d18O_m[j])){
+      j = j - 1
+    }
+    while(k <= nrow(bliso.ts) & is.na(bliso.ts$d18O_m[k])){
+      k = k + 1
+    }
+    bliso.ts$d18O_m[i] = mean(bliso.ts$d18O_m[c(j,k)], na.rm = TRUE)
+    #uncertainty - might need to revise
+    bliso.ts$d18O_sd[i] = sqrt(sum(bliso.ts$d18O_sd[c(j,k)], na.rm = TRUE))
+  }
+}
 
 #Profile water vapor isotopes & SH - data
 
@@ -70,7 +88,8 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
-           "phi.data" = l, "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
+           "phi.data" = l, "thick" = c(0.08, 0.1, 0.1, 0.2, 1), "rh" = rh,
+           "r_bl_pri" = bliso.ts[,2:3],
            "alpha" = c(1, 2, 2, 2, 1), "p_o_pri" = p_o_pri, "d_o.data" = d_o,
            "nl" = 5, "nt" = length(p))
 
