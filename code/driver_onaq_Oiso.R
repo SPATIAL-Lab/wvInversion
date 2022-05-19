@@ -70,9 +70,10 @@ top = max(unique(wviso$level))
 for(i in unique(wviso$ti)){
   if(!(top %in% wviso$level[wviso$ti == i])){
     wviso = wviso[wviso$ti != i,]
+  }else{
+    top.sh = wviso$sh_m[wviso$ti == i & wviso$level == top]
+    wviso = wviso[wviso$ti != i | wviso$sh_m >= top.sh,]
   }
-  top.sh = wviso$sh_m[wviso$ti == i & wviso$level == top]
-  wviso = wviso[wviso$ti != i | wviso$sh_m >= top.sh,]
 }
 ##remove ti = 1, model doesn't calculate fluxes at that step
 wviso = wviso[wviso$ti != 1,]
