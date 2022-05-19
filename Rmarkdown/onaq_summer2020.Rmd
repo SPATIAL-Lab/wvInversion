@@ -407,7 +407,7 @@ wv_12h <- wv_aligned %>%
                 d18O_sd = sd(d18O, na.rm = TRUE),
                 d2H_m = mean(d2H, na.rm = TRUE),
                 d2H_sd = sd(d2H, na.rm = TRUE),
-                sh_mean = mean(spec_hum, na.rm = TRUE),
+                sh_m = mean(spec_hum, na.rm = TRUE),
                 sh_sd = sd(spec_hum, na.rm = TRUE),
                 n = n())
 

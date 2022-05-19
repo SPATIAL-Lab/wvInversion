@@ -4,6 +4,8 @@ library(R2jags)
 p = read.csv("data/pcp_onaq_12hour_exdset3_05072020.csv")
 ##check for NAs
 sum(is.na(p$bulk_precip))
+##timeseries for all other data
+ts = p$t
 ##this is the vector of precip values, in mm
 p = p$bulk_precip
 
@@ -60,12 +62,36 @@ for(i in seq_along(bliso.ts$t)){
 }
 
 #Profile water vapor isotopes & SH - data
+##time index
+wviso$ti = match(wviso$t, as.POSIXct(ts))
+##for now, only keep times where the top level has a measurement
+##and the lower leve has a measured sh higher than top
+top = max(unique(wviso$level))
+for(i in unique(wviso$ti)){
+  if(!(top %in% wviso$level[wviso$ti == i])){
+    wviso = wviso[wviso$ti != i,]
+  }
+  top.sh = wviso$sh_m[wviso$ti == i & wviso$level == top]
+  wviso = wviso[wviso$ti != i | wviso$sh_m >= top.sh,]
+}
+##remove ti = 1, model doesn't calculate fluxes at that step
+wviso = wviso[wviso$ti != 1,]
+wviso_top_pri = wviso[wviso$level == top, c("t", "ti", "sh_m",
+                                            "sh_sd", "d18O_m",
+                                            "d18O_sd")]
+##reset the ti for the data to refer to the top_pri
+wviso$ti = match(wviso$t, wviso_top_pri$t)
+##remove the time from top_pri
+wviso_top_pri = wviso_top_pri[, -1]
+##finally the data
+wviso_data = wviso[wviso$level != top, c("ti", "sh_m",
+                                            "sh_sd", "d18O_m",
+                                            "d18O_sd")]
 
 
 #Soil water content - data
 swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 ##create time and depth indices
-ts = et$t
 swc$ti = match(swc$t, ts)
 swc$di = match(swc$v, c(501, 502, 503, 504, 505))
 l = cbind(swc$ti, swc$di, swc$mean_vswc)
@@ -89,7 +115,8 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
            "phi.data" = l, "thick" = c(0.08, 0.1, 0.1, 0.2, 1), "rh" = rh,
-           "r_bl_pri" = bliso.ts[,2:3],
+           "r_bl_pri" = bliso.ts[,2:3], "wviso.top.pri" = wviso_top_pri,
+           "wviso.data" = wviso_data,
            "alpha" = c(1, 2, 2, 2, 1), "p_o_pri" = p_o_pri, "d_o.data" = d_o,
            "nl" = 5, "nt" = length(p))
 
@@ -101,7 +128,7 @@ pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic_oIso.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 4, n.iter = 1000, n.burnin = 500, n.thin = 1)
+                     n.chains = 4, n.iter = 100, n.burnin = 50, n.thin = 1)
 (proc.time() - pt)[3]
 
 View(rmod$BUGSoutput$summary)

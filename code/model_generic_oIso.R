@@ -8,6 +8,27 @@ model {
     d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1/d_o.data[i, 4])
   }
   
+  #mixing
+  for(i in 1:length(wviso.data[,1])){
+    wviso.data[i, 4] ~ dnorm(d_o.vap[i], 1 / wviso.data[i, 5]^2)
+    wviso.data[i, 2] ~ dnorm(sh.et[i] + sh.top[wviso.data[i, 1]], 
+                             1 / wviso.data[i, 3]^2)
+    d_o.vap[i] = (d_o.top[wviso.data[i, 1]] * 
+                    sh.top[wviso.data[i, 1]] 
+                  + d_o.et[wviso.data[i, 1]] + sh.et[i]) / 
+      (sh.top[wviso.data[i, 1]] + sh.et[i])
+    sh.et[i] ~ dgamma(0.5, 1)
+  }
+  for(i in 1:length(wviso.top.pri[,1])){
+    d_o.top[i] ~ dnorm(wviso.top.pri[i, 4], 1 / wviso.top.pri[i, 5]^2)
+    sh.top[i] ~ dnorm(wviso.top.pri[i, 2], 1 / wviso.top.pri[i, 3]^2)T(0,)
+    d_o.et[i] = (r_o.et.num / r_o.et.den / 0.0020052 - 1) * 1000
+    r_o.et.num[i] = sum(evap_r[wviso.top.pri[i, 1]] * evap[wviso.top.pri[i, 1]],
+                    phi_o[wviso.top.pri[i, 1],] / phi[wviso.top.pri[i, 1],] * 
+                      transp[wviso.top.pri[i, 1],])
+    r_o.et.den[i] = sum(evap[wviso.top.pri[i, 1]], transp[wviso.top.pri[i, 1],])
+  }
+  
   # isotopes
   for(i in 2:nt){
     for(j in 1:nl){
