@@ -1,16 +1,20 @@
 model {
   
-  # data model 
+  #data model VSWC 
   for(i in 1:length(phi.data[,1])){
     phi.data[i, 3] ~ dnorm(phi.m[i], 1/(phi.data[i, 4]^2))
-    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] + phi.calUC
+    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] + phi.cal.err[phi.data[i, 2]]
   }
-  phi.calUC ~ dnorm(0, 1 / phi.calUC.pri^2)
+  for(i in 1:nl){
+    phi.cal.err[i] ~ dnorm(0, 1 / phi.calUC.pri^2)
+  }
+
+  #data model SWiso
   for(i in 1:length(d_o.data[,1])){
     d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1/d_o.data[i, 4])
   }
   
-  #water vapor mixing model
+  #water vapor mixing model & data model
   for(i in 1:length(wviso.data[,1])){
     wviso.data[i, 4] ~ dnorm(d_o.vap[i], 1 / wviso.data[i, 5]^2)
     wviso.data[i, 2] ~ dnorm(sh.et[i] + sh.top[wviso.data[i, 1]], 
