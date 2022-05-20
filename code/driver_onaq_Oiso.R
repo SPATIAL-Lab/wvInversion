@@ -132,7 +132,7 @@ rmod = jags.parallel(model.file = "code/model_generic_oIso.R",
                      data = dat, inits = NULL, 
                      n.chains = 4, n.iter = 5500, n.burnin = 500, n.thin = 5)
 (proc.time() - pt)[3]
-save(rmod, file = "C:/Users/u0133977.AD/Dropbox/rmod.Rdata")
+save(rmod, file = "~/rmod.Rdata")
 
 View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
