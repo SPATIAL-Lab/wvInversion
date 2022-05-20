@@ -357,14 +357,21 @@ p5
 #add a col for the time aggregation, set to datetime 
 #group by h-pos, v-pos and time
 #summarize by mean vswc 
+##first partition uncertainty into calibration (fixed) and measurement error (variable)
+swc_aligned$VSWCCalUncert = rep(min(swc_aligned$VSWCExpUncert) / 2)
 swc_12h <- swc_aligned %>%
       mutate(t = as.POSIXct((cut(endDateTime, breaks = "12 hour")),
                             "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
       group_by(horizontalPosition, verticalPosition, t) %>% 
       summarise(mean_vswc = mean(VSWCMean, na.rm = T), 
+                cal_uncert = mean(VSWCCalUncert, na.rm = TRUE),
+                meas_uncert = sd(VSWCMean, na.rm = TRUE) / sqrt(n()),
       n = n(),
       na = sum(is.na(VSWCMean)),
       percent_complete = 1 - sum(is.na(VSWCMean))/n())
+mum = max(swc_12h$meas_uncert, na.rm = TRUE)
+swc_12h$meas_uncert[swc_12h$meas_uncert == 0] = mum
+swc_12h$meas_uncert[is.na(swc_12h$meas_uncert)] = mum
 
 p6 <- swc_12h %>%
         group_by(horizontalPosition, verticalPosition) %>%

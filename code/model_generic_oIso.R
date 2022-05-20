@@ -1,14 +1,20 @@
 model {
   
-  # data model 
+  #data model VSWC 
   for(i in 1:length(phi.data[,1])){
-    phi.data[i, 3] ~ dnorm(phi[phi.data[i, 1], phi.data[i, 2]], 1/(0.005^2))
+    phi.data[i, 3] ~ dnorm(phi.m[i], 1/(phi.data[i, 4]^2))
+    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] + phi.cal.err[phi.data[i, 2]]
   }
+  for(i in 1:nl){
+    phi.cal.err[i] ~ dnorm(0, 1 / phi.calUC.pri^2)
+  }
+
+  #data model SWiso
   for(i in 1:length(d_o.data[,1])){
     d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1/d_o.data[i, 4])
   }
   
-  #mixing
+  #water vapor mixing model & data model
   for(i in 1:length(wviso.data[,1])){
     wviso.data[i, 4] ~ dnorm(d_o.vap[i], 1 / wviso.data[i, 5]^2)
     wviso.data[i, 2] ~ dnorm(sh.et[i] + sh.top[wviso.data[i, 1]], 
@@ -19,10 +25,12 @@ model {
       (sh.top[wviso.data[i, 1]] + sh.et[i])
     sh.et[i] ~ dgamma(0.5, 1)
   }
+  
+  #ET isotopic composition
   for(i in 1:length(wviso.top.pri[,1])){
     d_o.top[i] ~ dnorm(wviso.top.pri[i, 4], 1 / wviso.top.pri[i, 5]^2)
     sh.top[i] ~ dnorm(wviso.top.pri[i, 2], 1 / wviso.top.pri[i, 3]^2)T(0,)
-    d_o.et[i] = (r_o.et.num / r_o.et.den / 0.0020052 - 1) * 1000
+    d_o.et[i] = (r_o.et.num[i] / r_o.et.den[i] / 0.0020052 - 1) * 1000
     r_o.et.num[i] = sum(evap_r[wviso.top.pri[i, 1]] * evap[wviso.top.pri[i, 1]],
                     phi_o[wviso.top.pri[i, 1],] / phi[wviso.top.pri[i, 1],] * 
                       transp[wviso.top.pri[i, 1],])
