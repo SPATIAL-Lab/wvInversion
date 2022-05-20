@@ -115,7 +115,8 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
-           "phi.data" = l, "phi.calUC.pri" = swc$cal_uncert[1],
+           "phi.data" = l, 
+           #"phi.calUC.pri" = swc$cal_uncert[1],
            "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
            "r_bl_pri" = bliso.ts[,2:3], "wviso.top.pri" = wviso_top_pri,
            "wviso.data" = wviso_data,
@@ -130,7 +131,7 @@ pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic_oIso.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 4, n.iter = 5500, n.burnin = 500, n.thin = 5)
+                     n.chains = 4, n.iter = 2500, n.burnin = 500, n.thin = 5)
 (proc.time() - pt)[3]
 save(rmod, file = "~/rmod.Rdata")
 

@@ -35,3 +35,15 @@ tagg = function(data, dcol, vcol, sd = min(data[,dcol], na.rm = TRUE),
   
   return(aggd)
 }
+
+# Adds time series to plot w 2 prob density envelopes
+tsdens = function(d, baseHue = 0.5){
+  #Check dimensions of d
+  if(ncol(d) != 6){stop("d cols should be should be time, 5%, 25%, 50%, 75%, 95% CI")}
+  
+  cols = hsv(baseHue, c(0.1, 0.25, 0.75))
+  
+  polygon(c(d[, 1], rev(d[, 1])), c(d[, 2], rev(d[, 6])), col = cols[1])
+  polygon(c(d[, 1], rev(d[, 1])), c(d[, 3], rev(d[, 5])), col = cols[2])
+  lines(d[, 1], d[, 4], col = cols[3], lwd = 2)
+}
