@@ -404,11 +404,11 @@ wv_12h <- wv_aligned %>%
                             "%Y-%m-%d %H:%M:%S", tz = "GMT")) %>%
       group_by(level, t) %>% 
       summarise(d18O_m = mean(d18O, na.rm = TRUE),
-                d18O_sd = sd(d18O, na.rm = TRUE),
+                d18O_sd = sd(d18O, na.rm = TRUE) / sqrt(n()),
                 d2H_m = mean(d2H, na.rm = TRUE),
-                d2H_sd = sd(d2H, na.rm = TRUE),
+                d2H_sd = sd(d2H, na.rm = TRUE) / sqrt(n()),
                 sh_m = mean(spec_hum, na.rm = TRUE),
-                sh_sd = sd(spec_hum, na.rm = TRUE),
+                sh_sd = sd(spec_hum, na.rm = TRUE) / sqrt(n()),
                 n = n())
 
 p8 <- wv_12h %>%
