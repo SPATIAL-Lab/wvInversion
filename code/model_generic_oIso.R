@@ -2,8 +2,10 @@ model {
   
   # data model 
   for(i in 1:length(phi.data[,1])){
-    phi.data[i, 3] ~ dnorm(phi[phi.data[i, 1], phi.data[i, 2]], 1/(0.005^2))
+    phi.data[i, 3] ~ dnorm(phi.m[i], 1/(phi.data[i, 4]^2))
+    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] + phi.calUC
   }
+  phi.calUC ~ dnorm(0, 1 / phi.calUC.pri^2)
   for(i in 1:length(d_o.data[,1])){
     d_o.data[i, 3] ~ dnorm(d_o[d_o.data[i, 1], d_o.data[i, 2]], 1/d_o.data[i, 4])
   }

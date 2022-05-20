@@ -95,7 +95,7 @@ swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 ##create time and depth indices
 swc$ti = match(swc$t, ts)
 swc$di = match(swc$v, c(501, 502, 503, 504, 505))
-l = cbind(swc$ti, swc$di, swc$mean_vswc)
+l = cbind(swc$ti, swc$di, swc$mean_vswc, swc$meas_uncert)
 
 
 #Soil water isotopes - data
@@ -115,22 +115,24 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
-           "phi.data" = l, "thick" = c(0.08, 0.1, 0.1, 0.2, 1), "rh" = rh,
+           "phi.data" = l, "phi.calUC.pri" = swc$cal_uncert[1],
+           "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
            "r_bl_pri" = bliso.ts[,2:3], "wviso.top.pri" = wviso_top_pri,
            "wviso.data" = wviso_data,
            "alpha" = c(1, 2, 2, 2, 1), "p_o_pri" = p_o_pri, "d_o.data" = d_o,
            "nl" = 5, "nt" = length(p))
 
-parms = c("phi", "adv", "diff", "et", "k_s", "phi_s", "psi_s", 
-          "k_dt", "pre", "e_frac", "t_frac", "d_o", "evap_r", "p_o", "diff_o")
+parms = c("phi", "et", "k_s", "phi_s", "psi_s", "d_o.et", "evap_r",
+          "k_dt", "pre", "e_frac", "t_frac", "d_o", "p_o", "diff_o")
 
 #Run inversion
 pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic_oIso.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
-                     n.chains = 4, n.iter = 100, n.burnin = 50, n.thin = 1)
+                     n.chains = 4, n.iter = 5500, n.burnin = 500, n.thin = 5)
 (proc.time() - pt)[3]
+save(rmod, file = "C:/Users/u0133977.AD/Dropbox/rmod.Rdata")
 
 View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
