@@ -1,4 +1,5 @@
 library(R2jags)
+source("code/helpers.R")
 
 #precip - prior
 p = read.csv("data/pcp_onaq_12hour_exdset3_05072020.csv")
@@ -137,7 +138,7 @@ save(rmod, file = "~/rmod.Rdata")
 
 View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
-sl = rmod$BUGSoutput$sims.list
+sl = r2$BUGSoutput$sims.list
 
 #Some useful plots
 ##Compare soil phi timeseries
@@ -177,3 +178,19 @@ for(i in 2:5){
   points(d_o[d_o[,2] == i,1], d_o[d_o[,2] == i,3], col = i)
 }
 
+##Efrac density
+ed = apply(sl$e_frac, 2, quantile, probs = c(0.5, 0.25, 0.5, 0.75, 0.95))
+ed = t(ed)
+tsw = as.POSIXct(ts)
+plot(tsw[-1], ed[,1], xlim = range(tsw), ylim = range(ed), type = "n",
+     xlab = "Date", ylab = "Evaporation fraction")
+tsdens(cbind(tsw[-1], ed))
+
+##Evap d18O
+ed = apply(sl$d_o.et, 2, quantile, probs = c(0.5, 0.25, 0.5, 0.75, 0.95))
+ed = t(ed)
+plot(tsw[wviso_top_pri$ti], ed[,1], xlim = range(tsw), ylim = range(ed), type = "n",
+     xlab = "Date", ylab = "d18O of ET")
+lines(tsw, apply(sl$d_o[,,1], 2, median)) 
+lines(tsw, apply(sl$d_o[,,5], 2, median)) 
+tsdens(cbind(tsw[wviso_top_pri$ti], ed), 1)
