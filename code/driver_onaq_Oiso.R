@@ -1,4 +1,5 @@
 library(R2jags)
+source("code/helpers.R")
 
 #precip - prior
 p = read.csv("data/pcp_onaq_12hour_exdset3_05072020.csv")
@@ -115,7 +116,12 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
+<<<<<<< HEAD
            "phi.data" = l, #"phi.calUC.pri" = swc$cal_uncert[1],
+=======
+           "phi.data" = l, 
+           #"phi.calUC.pri" = swc$cal_uncert[1],
+>>>>>>> f56b6621bb7020255cc44f781737736b6a20ece3
            "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
            "r_bl_pri" = bliso.ts[,2:3], "wviso.top.pri" = wviso_top_pri,
            "wviso.data" = wviso_data,
@@ -130,14 +136,18 @@ pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic_oIso.R", 
                      parameters.to.save = parms, 
                      data = dat, inits = NULL, 
+<<<<<<< HEAD
                      n.chains = 4, n.iter = 7500, n.burnin = 2500, n.thin = 5)
+=======
+                     n.chains = 4, n.iter = 2500, n.burnin = 500, n.thin = 5)
+>>>>>>> f56b6621bb7020255cc44f781737736b6a20ece3
 (proc.time() - pt)[3]
 
 save(rmod, file = "~/rmod3.Rdata")
 
 View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
-sl = rmod$BUGSoutput$sims.list
+sl = r2$BUGSoutput$sims.list
 
 #Some useful plots
 ##Compare soil phi timeseries
@@ -177,3 +187,19 @@ for(i in 2:5){
   points(d_o[d_o[,2] == i,1], d_o[d_o[,2] == i,3], col = i)
 }
 
+##Efrac density
+ed = apply(sl$e_frac, 2, quantile, probs = c(0.5, 0.25, 0.5, 0.75, 0.95))
+ed = t(ed)
+tsw = as.POSIXct(ts)
+plot(tsw[-1], ed[,1], xlim = range(tsw), ylim = range(ed), type = "n",
+     xlab = "Date", ylab = "Evaporation fraction")
+tsdens(cbind(tsw[-1], ed))
+
+##Evap d18O
+ed = apply(sl$d_o.et, 2, quantile, probs = c(0.5, 0.25, 0.5, 0.75, 0.95))
+ed = t(ed)
+plot(tsw[wviso_top_pri$ti], ed[,1], xlim = range(tsw), ylim = range(ed), type = "n",
+     xlab = "Date", ylab = "d18O of ET")
+lines(tsw, apply(sl$d_o[,,1], 2, median)) 
+lines(tsw, apply(sl$d_o[,,5], 2, median)) 
+tsdens(cbind(tsw[wviso_top_pri$ti], ed), 1)
