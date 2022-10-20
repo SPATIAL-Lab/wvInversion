@@ -3,11 +3,11 @@ model {
   #data model VSWC 
   for(i in 1:length(phi.data[,1])){
     phi.data[i, 3] ~ dnorm(phi.m[i], 1/(phi.data[i, 4]^2))
-    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] #+ phi.cal.err[phi.data[i, 2]]
+    phi.m[i] = phi[phi.data[i, 1], phi.data[i, 2]] + phi.cal.err[phi.data[i, 2]]
   }
-#  for(i in 1:nl){
-#    phi.cal.err[i] ~ dnorm(0, 1 / phi.calUC.pri^2)
-#  }
+  for(i in 1:nl){
+    phi.cal.err[i] ~ dnorm(0, 1 / phi.calUC.pri^2)
+  }
 
   #data model SWiso
   for(i in 1:length(d_o.data[,1])){
@@ -170,6 +170,6 @@ model {
   k_dt ~ dunif(2, 4)
   #k_dt = 3
 
-  psi_s ~ dunif(-0.8, -0.5) 
+  psi_s ~ dnorm(-0.62, 1/0.02^2)I(-0.75, -0.5)
   #psi_s = -0.62 
 }

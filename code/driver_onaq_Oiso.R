@@ -66,7 +66,7 @@ for(i in seq_along(bliso.ts$t)){
 ##time index
 wviso$ti = match(wviso$t, as.POSIXct(ts))
 ##for now, only keep times where the top level has a measurement
-##and the lower leve has a measured sh higher than top
+##and the lower level has a measured sh higher than top
 top = max(unique(wviso$level))
 for(i in unique(wviso$ti)){
   if(!(top %in% wviso$level[wviso$ti == i])){
@@ -90,14 +90,12 @@ wviso_data = wviso[wviso$level != top, c("ti", "sh_m",
                                             "sh_sd", "d18O_m",
                                             "d18O_sd")]
 
-
 #Soil water content - data
 swc = read.csv("data/swc_onaq_12hour_exdset3_05072020.csv")
 ##create time and depth indices
 swc$ti = match(swc$t, ts)
 swc$di = match(swc$v, c(501, 502, 503, 504, 505))
 l = cbind(swc$ti, swc$di, swc$mean_vswc, swc$meas_uncert)
-
 
 #Soil water isotopes - data
 swi = read.csv("data/ONAQsoil.csv")
@@ -116,12 +114,7 @@ d_o = data.frame(swi$ti, swi$di, swi$Calibrated.O, swi$Calibrated.O.SE)
 
 #Set up input
 dat = list("delta_t" = 0.5, "ET" = etp*1e-3, "pre_pri" = p*1e-3, "st" = st,
-<<<<<<< HEAD
-           "phi.data" = l, #"phi.calUC.pri" = swc$cal_uncert[1],
-=======
-           "phi.data" = l, 
-           #"phi.calUC.pri" = swc$cal_uncert[1],
->>>>>>> f56b6621bb7020255cc44f781737736b6a20ece3
+           "phi.data" = l, "phi.calUC.pri" = swc$cal_uncert[1],
            "thick" = c(0.06, 0.1, 0.1, 0.2, 1), "rh" = rh,
            "r_bl_pri" = bliso.ts[,2:3], "wviso.top.pri" = wviso_top_pri,
            "wviso.data" = wviso_data,
@@ -134,20 +127,15 @@ parms = c("phi", "et", "k_s", "phi_s", "psi_s", "d_o.et", "evap_r",
 #Run inversion
 pt = proc.time()
 rmod = jags.parallel(model.file = "code/model_generic_oIso.R", 
-                     parameters.to.save = parms, 
-                     data = dat, inits = NULL, 
-<<<<<<< HEAD
-                     n.chains = 4, n.iter = 7500, n.burnin = 2500, n.thin = 5)
-=======
-                     n.chains = 4, n.iter = 2500, n.burnin = 500, n.thin = 5)
->>>>>>> f56b6621bb7020255cc44f781737736b6a20ece3
+                     parameters.to.save = parms, data = dat, inits = NULL, 
+                     n.chains = 4, n.iter = 12000, n.burnin = 2000, n.thin = 5)
 (proc.time() - pt)[3]
 
 save(rmod, file = "~/rmod3.Rdata")
 
 View(rmod$BUGSoutput$summary)
 #Shorthand for posterior parameters
-sl = r2$BUGSoutput$sims.list
+sl = rmod$BUGSoutput$sims.list
 
 #Some useful plots
 ##Compare soil phi timeseries
